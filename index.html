@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Multimodal Extraction — Dynamic Report</title>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary:   #2E86AB;
+    --secondary: #A23B72;
+    --success:   #2A9D8F;
+    --warning:   #E63946;
+    --accent:    #F4A261;
+    --dark:      #1B4965;
+    --bg:        #F8FAFC;
+    --surface:   #FFFFFF;
+    --border:    #E2E8F0;
+    --text:      #1E293B;
+    --muted:     #64748B;
+    --radius:    12px;
+    --shadow:    0 2px 16px rgba(0,0,0,.07);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Syne', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 15px;
+  }
+
+  /* ── Hero Banner ─────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, var(--dark) 0%, #2E86AB 55%, #A23B72 100%);
+    color: #fff;
+    padding: 64px 48px 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-inner { position: relative; max-width: 900px; }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.3);
+    color: #fff;
+    font-size: 0.75rem; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 100px; margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    font-weight: 800; line-height: 1.2;
+    margin-bottom: 14px; letter-spacing: -0.02em;
+  }
+  .hero p { font-size: 1.05rem; opacity: .88; max-width: 640px; margin-bottom: 16px; }
+  .hero-format-note {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 0.83rem;
+    opacity: .92;
+    max-width: 700px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .hero-format-note strong { color: #FFD166; }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    font-size: 0.82rem; opacity: .8;
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── KPI Strip ───────────────────────── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .kpi { padding: 26px 28px; border-right: 1px solid var(--border); text-align: center; }
+  .kpi:last-child { border-right: none; }
+  .kpi-value {
+    font-size: 2rem; font-weight: 800;
+    color: var(--primary); line-height: 1.1; letter-spacing: -0.03em;
+  }
+  .kpi-label {
+    font-size: 0.78rem; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em; margin-top: 4px;
+  }
+
+  /* ── Layout ──────────────────────────── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Section ─────────────────────────── */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 14px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--primary), var(--dark));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--dark); margin: 0; }
+  .section-header p { font-size: 0.83rem; color: var(--muted); margin: 2px 0 0; }
+
+  /* ── Cards ───────────────────────────── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card-full { width: 100%; }
+
+  /* ── Pipeline Steps ──────────────────── */
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .pipeline-step {
+    display: flex; gap: 20px; padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pipeline-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px;
+    background: var(--primary); color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-num.end { background: var(--success); }
+  .step-body { flex: 1; min-width: 0; }
+  .step-tool {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--primary); background: #EFF6FF;
+    padding: 2px 8px; border-radius: 5px;
+    display: inline-block; margin-bottom: 4px;
+  }
+  .step-desc { font-size: 0.87rem; color: var(--text); margin-bottom: 6px; }
+  .step-result { font-size: 0.8rem; color: var(--success); font-weight: 600; }
+  .step-meta {
+    display: flex; gap: 12px; font-size: 0.75rem; color: var(--muted);
+    margin-top: 8px; flex-wrap: wrap;
+  }
+  .step-meta span { background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 5px; }
+
+  /* ── Data Table ──────────────────────── */
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .data-table thead tr { background: var(--dark); color: #fff; }
+  .data-table th {
+    padding: 12px 14px; font-weight: 700; text-align: left;
+    font-size: 0.78rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .data-table tbody tr:hover { background: #F1F5F9; }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table code {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+    background: #EFF6FF; color: var(--primary); padding: 1px 5px; border-radius: 4px;
+  }
+
+  /* ── Badges ──────────────────────────── */
+  .badge {
+    display: inline-block; font-size: 0.72rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 100px;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .badge-primary { background: #DBEAFE; color: #1D4ED8; }
+  .badge-success { background: #D1FAE5; color: #065F46; }
+
+  /* ── Callout boxes ───────────────────── */
+  .callout {
+    background: #EFF6FF; border-left: 4px solid var(--primary);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 16px 20px; margin-bottom: 20px; font-size: 0.9rem;
+  }
+  .callout strong { color: var(--dark); }
+  .callout-warn {
+    background: #FFFBEB; border-left: 4px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 16px 20px; margin-bottom: 20px; font-size: 0.88rem;
+  }
+  .callout-warn strong { color: #92400E; }
+
+  /* ── Prompt Block ────────────────────── */
+  .prompt-block {
+    background: #1E1E2E; color: #CDD6F4;
+    border-radius: var(--radius); padding: 24px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+    line-height: 1.7; overflow-x: auto; margin-bottom: 12px;
+  }
+  .prompt-block .kw  { color: #CBA6F7; }
+  .prompt-block .str { color: #A6E3A1; }
+  .prompt-block .com { color: #6C7086; font-style: italic; }
+  .prompt-block .hl  { color: #F38BA8; }
+
+  /* ── Rationale table ─────────────────── */
+  .rationale-table { width:100%; border-collapse:collapse; font-size:0.84rem; }
+  .rationale-table th {
+    background: var(--dark); color:#fff;
+    padding:10px 14px; font-size:0.78rem; text-transform:uppercase; letter-spacing:.04em; text-align:left;
+  }
+  .rationale-table td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .rationale-table tbody tr:nth-child(even) { background:#F8FAFC; }
+  .rationale-table tbody tr:last-child td { border-bottom:none; }
+  .rationale-table code {
+    font-family:'JetBrains Mono',monospace; font-size:0.78rem;
+    background:#EFF6FF; color:var(--primary); padding:1px 5px; border-radius:4px;
+  }
+
+  /* ── Authors ─────────────────────────── */
+  .hero-authors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .author-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #fff;
+    backdrop-filter: blur(4px);
+  }
+  .author-chip .student-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    opacity: 0.75;
+    font-weight: 400;
+  }
+
+  /* ── Footer ──────────────────────────── */
+  footer {
+    text-align: center; padding: 32px 24px;
+    font-size: 0.8rem; color: var(--muted);
+    border-top: 1px solid var(--border); background: var(--surface);
+  }
+  .text-muted { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ════ HERO ════ -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">📋 Dynamic Report · Agents · Tool Use · Multimodal</div>
+    <h1>Agentic Multimodal Extraction<br>from Engineering Diagrams</h1>
+    <p>
+      An autonomous AI agent receives an industrial electrical panel wiring diagram,
+      plans a sequence of tool calls, extracts structured data, audits protection devices,
+      and generates this interactive report — all within a single execution loop.
+    </p>
+
+    <div class="hero-authors">
+      <div class="author-chip">👤 Pheechaphuth Boonyoros <span class="student-id">LS2525207</span></div>
+      <div class="author-chip">👤 Teh Bismin <span class="student-id">LS2525222</span></div>
+    </div>
+
+    <div class="hero-format-note">
+      <strong>📄 Note on Output Format — HTML vs. Static PDF</strong><br>
+      The deliverable is produced as a self-contained HTML file rather than a static PDF. Standard PDF cannot host JavaScript or Plotly's interactive runtime, so interactive elements such as zoom, pan, hover-tooltips, and the drag-rearrangeable Sankey diagram would be lost. An HTML file satisfies the 'dynamic PDF report' requirement while preserving full interactivity. The file can be opened in any browser without a server, printed to PDF from the browser if a static copy is needed, or embedded in an LMS.
+    </div>
+
+    <div class="hero-meta">
+      <span>🤖 Model: claude-opus-4-5</span>
+      <span>📐 Diagram: Industrial Electrical Panel Wiring Diagram (IEC 60617)</span>
+      <span>🕐 Generated: 2026-04-10 19:16:37</span>
+      <span>📊 Standard: IEC 60617</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ KPI STRIP ════ -->
+<div class="kpi-strip">
+  <div class="kpi"><div class="kpi-value">7</div><div class="kpi-label">Tool Calls</div></div>
+  <div class="kpi"><div class="kpi-value">13</div><div class="kpi-label">Components Extracted</div></div>
+  <div class="kpi"><div class="kpi-value">11</div><div class="kpi-label">BOM Line Items</div></div>
+  <div class="kpi"><div class="kpi-value">28,450</div><div class="kpi-label">Total Tokens Used</div></div>
+  <div class="kpi"><div class="kpi-value">36.4s</div><div class="kpi-label">Total Execution Time</div></div>
+  <div class="kpi"><div class="kpi-value">6/6</div><div class="kpi-label">Breakers Passed</div></div>
+</div>
+
+<!-- ════ MAIN CONTENT ════ -->
+<div class="container">
+
+  <!-- §1  Task Overview & Prompt Design -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🎯</div>
+      <div>
+        <h2>Task Overview &amp; Prompt Engineering Strategy</h2>
+        <p>How the system prompt and tool schema were designed to drive the agent loop</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Assignment:</strong> Design an Agentic Workflow that processes <em>multimodal inputs</em>
+      (an industrial electrical panel wiring diagram image), extracts structured data via a planned
+      tool-call loop, and produces a documented extraction pipeline.
+      Deliverable: a <strong>dynamic interactive report</strong> with zoomable visualizations.
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="font-size:0.95rem;font-weight:700;color:var(--dark);margin-bottom:12px;">🔧 System Prompt Design</h3>
+        <div class="prompt-block">
+<span class="com"># System prompt (abridged)</span>
+<span class="kw">You are</span> an expert electrical engineering AI.
+<span class="kw">You have access to</span> the following tools:
+
+<span class="str">extract_diagram_metadata</span>   <span class="com"># Step 1 — ground truth anchor</span>
+<span class="str">extract_component_list</span>      <span class="com"># Step 2 — structured JSON schema</span>
+<span class="str">extract_wire_specifications</span> <span class="com"># Step 3 — single responsibility</span>
+<span class="str">build_bom</span>                   <span class="com"># Step 4 — context chaining</span>
+<span class="str">audit_protection_devices</span>    <span class="com"># Step 5 — safety verification</span>
+<span class="str">generate_power_flow_graph</span>   <span class="com"># Step 6 — graph as JSON</span>
+<span class="str">compile_final_report</span>        <span class="com"># Step 7 — forced termination</span>
+
+<span class="hl">RULES:</span>
+- Call tools <span class="kw">sequentially</span>; each step builds on prior results.
+- Never skip steps.
+- Return <span class="kw">structured JSON</span> from every tool call.
+- Use <span class="kw">end_turn ONLY</span> after Step 7.
+        </div>
+        <p style="font-size:0.83rem;color:var(--muted);">
+          Sequential ordering + JSON output schema are the two most impactful
+          prompt design decisions — see §2 for detailed rationale.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:0.95rem;font-weight:700;color:var(--dark);margin-bottom:12px;">📌 Multimodal Input Strategy</h3>
+        <p style="font-size:0.87rem;margin-bottom:14px;">
+          The user turn passes the wiring diagram as a <code>base64</code> encoded image
+          alongside a task description. The model reasons over the visual content
+          and emits structured tool calls — never raw image descriptions:
+        </p>
+        <div class="prompt-block">
+<span class="kw">messages</span>: [{
+  <span class="str">"role"</span>: <span class="str">"user"</span>,
+  <span class="str">"content"</span>: [
+    {
+      <span class="str">"type"</span>: <span class="str">"image"</span>,
+      <span class="str">"source"</span>: {
+        <span class="str">"type"</span>: <span class="str">"base64"</span>,
+        <span class="str">"media_type"</span>: <span class="str">"image/jpeg"</span>,
+        <span class="str">"data"</span>: <span class="hl">&lt;diagram_b64&gt;</span>
+      }
+    },
+    {
+      <span class="str">"type"</span>: <span class="str">"text"</span>,
+      <span class="str">"text"</span>: <span class="str">"Extract all structured data
+               from this wiring diagram
+               using the available tools."</span>
+    }
+  ]
+}]
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §2  Prompt Engineering Rationale  ← NEW SECTION -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🧠</div>
+      <div>
+        <h2>Prompt Engineering Rationale</h2>
+        <p>Why each design decision was made — the documented thought process behind every step</p>
+      </div>
+    </div>
+
+    <div class="callout-warn">
+      <strong>Why does the order of tool calls matter?</strong><br>
+      Free-form ReAct loops (where the model decides its own order) frequently produce partial
+      extractions because the model terminates early once it believes the task is "done enough."
+      Enforced sequential ordering guarantees completeness — every step must execute before
+      <code>end_turn</code> is permitted. This is the single highest-impact prompt engineering
+      decision in this workflow.
+    </div>
+
+    <div class="card card-full">
+      <div class="table-wrapper">
+        <table class="rationale-table">
+          <thead>
+            <tr>
+              <th style="width:80px;">Step</th>
+              <th style="width:200px;">Tool</th>
+              <th>Prompt Engineering Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+    <tr>
+      <td><strong>Step 1</strong></td>
+      <td><code>extract_diagram_metadata</code></td>
+      <td style="font-size:0.84rem;">Instructing the model to start with metadata grounds every subsequent step in verified context (drawing number, voltage levels, standard). Without this anchor step the model could hallucinate component ratings that contradict the actual diagram header.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 2</strong></td>
+      <td><code>extract_component_list</code></td>
+      <td style="font-size:0.84rem;">Requiring JSON output with fixed keys (id, type, rating, zone, wire_spec, line_ref) forces the model to produce machine-readable records rather than free-form prose. Fixed schema also makes downstream tool calls deterministic — build_bom can reliably reference the same field names.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 3</strong></td>
+      <td><code>extract_wire_specifications</code></td>
+      <td style="font-size:0.84rem;">Separating wire extraction into its own step prevents the component-list step from becoming overloaded. Cognitive load management in the prompt — one responsibility per tool call — measurably reduces hallucinated wire gauges compared to asking for everything in a single call.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 4</strong></td>
+      <td><code>build_bom</code></td>
+      <td style="font-size:0.84rem;">This step uses the output of Steps 2–3 as explicit context injected into the prompt. Chaining structured JSON outputs as inputs forces the model to reconcile any inconsistencies (e.g. a component listed in Step 2 but without a wire spec in Step 3) rather than silently omitting items.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 5</strong></td>
+      <td><code>audit_protection_devices</code></td>
+      <td style="font-size:0.84rem;">By the time the agent reaches this step it holds the full component list and wire specs in context. The system prompt explicitly forbids skipping steps, ensuring the audit always has verified input data — this is the key safety benefit of enforced sequential ordering over a free-form ReAct loop.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 6</strong></td>
+      <td><code>generate_power_flow_graph</code></td>
+      <td style="font-size:0.84rem;">Asking the model to output a graph as a structured node/edge JSON (not a description) means the visualization layer can render it directly without a second parsing step. This separation of 'data extraction' from 'rendering' is a core agentic design principle demonstrated here.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 7</strong></td>
+      <td><code>compile_final_report</code></td>
+      <td style="font-size:0.84rem;">The final step serves as a forcing function: the model cannot emit end_turn until it has called compile_final_report. This prevents premature termination — a common failure mode in free-form agent loops where the model decides it is 'done' after only partial extraction.</td>
+    </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- §3  Agent Loop -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🔄</div>
+      <div>
+        <h2>Agent Planning &amp; Execution Loop</h2>
+        <p>Plan → Act → Observe → Reflect — 7 sequential tool calls</p>
+      </div>
+    </div>
+    <div class="card card-full">
+      <div class="pipeline">
+
+        <div class="pipeline-step">
+          <div class="step-num ">1</div>
+          <div class="step-body">
+            <div class="step-tool">extract_diagram_metadata</div>
+            <div class="step-desc">Parse diagram header, drawing number, revision, voltage levels, and applicable standards from the title block and annotations</div>
+            <div class="step-result">✓ Drawing DSK7069-50-TT0 confirmed; 480V AC primary, 120V AC secondary (via PMR1107), 24V DC bus; IEC 60617 symbols; 2 pages extracted</div>
+            <div class="step-meta">
+              <span>⏱ 3840 ms</span>
+              <span>↑ 1,420 in-tokens</span>
+              <span>↓ 310 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num ">2</div>
+          <div class="step-body">
+            <div class="step-tool">extract_component_list</div>
+            <div class="step-desc">Identify every tagged component (circuit breakers, power supplies, transformer, HMI, Ethernet switch) with reference designator, type, rating, and zone</div>
+            <div class="step-result">✓ 13 components catalogued across Zones A–F: CB1102, PMR1107, CB1108, PS1111, PS1112, PS1113, STRATIX5700, PANELVIEW+1000, PS1117, CB1117, CB1121, CB1123, CB1146</div>
+            <div class="step-meta">
+              <span>⏱ 6210 ms</span>
+              <span>↑ 2,850 in-tokens</span>
+              <span>↓ 680 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num ">3</div>
+          <div class="step-body">
+            <div class="step-tool">extract_wire_specifications</div>
+            <div class="step-desc">Read wire gauge, colour code, and AWG rating for every inter-component connection shown in the diagram</div>
+            <div class="step-result">✓ 8 distinct wire specs logged: #14 AWG Yellow, #10 AWG Red, #14 AWG Red, #18 AWG Blue, #10 AWG Red/White, #14 AWG Blue, Blue #16 AWG, #10 AWG White</div>
+            <div class="step-meta">
+              <span>⏱ 4970 ms</span>
+              <span>↑ 3,100 in-tokens</span>
+              <span>↓ 420 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num ">4</div>
+          <div class="step-body">
+            <div class="step-tool">build_bom</div>
+            <div class="step-desc">Consolidate extracted components into a formal Bill of Materials with manufacturer part numbers, quantities, and cross-references</div>
+            <div class="step-result">✓ 11-line BOM generated; Allen-Bradley/Rockwell Automation part numbers resolved for all items; quantities aggregated (e.g. 1769-PA4 qty 2, 140M-C2E-C15 qty 2)</div>
+            <div class="step-meta">
+              <span>⏱ 5530 ms</span>
+              <span>↑ 3,740 in-tokens</span>
+              <span>↓ 510 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num ">5</div>
+          <div class="step-body">
+            <div class="step-tool">audit_protection_devices</div>
+            <div class="step-desc">Verify each circuit breaker rating against the load it protects and cross-check against IEC 60364 overcurrent protection requirements</div>
+            <div class="step-result">✓ 6/6 breakers PASS: CB1102 15A (Zone A general), CB1108 30A (TX primary), CB1117 15A (PS1117), CB1121 5A (Zone F-A), CB1123 5A (Zone F-B), CB1146 1A (signal circuit)</div>
+            <div class="step-meta">
+              <span>⏱ 7280 ms</span>
+              <span>↑ 4,210 in-tokens</span>
+              <span>↓ 590 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num ">6</div>
+          <div class="step-body">
+            <div class="step-tool">generate_power_flow_graph</div>
+            <div class="step-desc">Construct the directed power-flow graph from 480V AC source through transformer and rectifiers to the 24V DC bus and all terminal loads</div>
+            <div class="step-result">✓ 9-node, 9-edge Sankey graph produced: 480V AC → CB1108 → PMR1107 → 120V Bus → PS1111/PS1112 → 24V DC Bus → PLC / HMI / PS1113 / PS1117</div>
+            <div class="step-meta">
+              <span>⏱ 5890 ms</span>
+              <span>↑ 4,680 in-tokens</span>
+              <span>↓ 440 out-tokens</span>
+              <span class="badge badge-primary">tool_use</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-num end">7</div>
+          <div class="step-body">
+            <div class="step-tool">compile_final_report</div>
+            <div class="step-desc">Aggregate all prior tool outputs into a single structured report payload and signal end_turn to terminate the agent loop</div>
+            <div class="step-result">✓ Report compiled: 13 components, 11 BOM items, 8 wire specs, 6 breaker audits, 9-node power graph. Agent loop terminated cleanly with end_turn.</div>
+            <div class="step-meta">
+              <span>⏱ 2650 ms</span>
+              <span>↑ 5,120 in-tokens</span>
+              <span>↓ 380 out-tokens</span>
+              <span class="badge badge-success">end_turn</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §4  Execution Analytics -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">📈</div>
+      <div>
+        <h2>Execution Analytics</h2>
+        <p>Interactive charts — zoom, pan, hover, and click legend items to filter</p>
+      </div>
+    </div>
+    <div class="card card-full" style="margin-bottom:24px;"><div>                            <div id="15240a3d-7c96-4d96-9d77-f9f7f89d5622" class="plotly-graph-div" style="height:480px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("15240a3d-7c96-4d96-9d77-f9f7f89d5622")) {                    Plotly.newPlot(                        "15240a3d-7c96-4d96-9d77-f9f7f89d5622",                        [{"customdata":[[1420,310,"extract_diagram_metadata","Parse diagram header, drawing number, revision, voltage levels, and applicable standards from the title block and annotations"],[2850,680,"extract_component_list","Identify every tagged component (circuit breakers, power supplies, transformer, HMI, Ethernet switch) with reference designator, type, rating, and zone"],[3100,420,"extract_wire_specifications","Read wire gauge, colour code, and AWG rating for every inter-component connection shown in the diagram"],[3740,510,"build_bom","Consolidate extracted components into a formal Bill of Materials with manufacturer part numbers, quantities, and cross-references"],[4210,590,"audit_protection_devices","Verify each circuit breaker rating against the load it protects and cross-check against IEC 60364 overcurrent protection requirements"],[4680,440,"generate_power_flow_graph","Construct the directed power-flow graph from 480V AC source through transformer and rectifiers to the 24V DC bus and all terminal loads"]],"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003eDuration: %{x:.1f}s\u003cbr\u003eInput Tokens: %{customdata[0]:,}\u003cbr\u003eOutput Tokens: %{customdata[1]:,}\u003cbr\u003ePurpose: %{customdata[3]}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"tool_use","marker":{"color":"#2E86AB","pattern":{"shape":""},"line":{"width":0}},"name":"tool_use","orientation":"h","showlegend":true,"text":{"dtype":"f8","bdata":"uB6F61G4DkDXo3A9CtcYQOF6FK5H4RNAH4XrUbgeFkAfhetRuB4dQI\u002fC9ShcjxdA"},"textposition":"outside","x":{"dtype":"f8","bdata":"uB6F61G4DkDXo3A9CtcYQOF6FK5H4RNAH4XrUbgeFkAfhetRuB4dQI\u002fC9ShcjxdA"},"xaxis":"x","y":["Step 1: extract_diagram_metadata","Step 2: extract_component_list","Step 3: extract_wire_specifications","Step 4: build_bom","Step 5: audit_protection_devices","Step 6: generate_power_flow_graph"],"yaxis":"y","type":"bar","texttemplate":"%{text:.1f}s"},{"customdata":[[5120,380,"compile_final_report","Aggregate all prior tool outputs into a single structured report payload and signal end_turn to terminate the agent loop"]],"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003eDuration: %{x:.1f}s\u003cbr\u003eInput Tokens: %{customdata[0]:,}\u003cbr\u003eOutput Tokens: %{customdata[1]:,}\u003cbr\u003ePurpose: %{customdata[3]}\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"end_turn","marker":{"color":"#2A9D8F","pattern":{"shape":""},"line":{"width":0}},"name":"end_turn","orientation":"h","showlegend":true,"text":{"dtype":"f8","bdata":"MzMzMzMzBUA="},"textposition":"outside","x":{"dtype":"f8","bdata":"MzMzMzMzBUA="},"xaxis":"x","y":["Step 7: compile_final_report"],"yaxis":"y","type":"bar","texttemplate":"%{text:.1f}s"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Duration (seconds)"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":""},"autorange":"reversed"},"legend":{"title":{"text":"Stop Reason"},"tracegroupgap":0,"x":0.75,"y":0.02,"bgcolor":"rgba(255,255,255,0.85)"},"title":{"text":"\u003cb\u003eAgent Execution Timeline\u003c\u002fb\u003e\u003cbr\u003e\u003csup\u003ePlan \u2192 Act \u2192 Observe \u2192 Reflect loop across 7 tool calls\u003c\u002fsup\u003e","font":{"family":"'Syne', system-ui, sans-serif","size":16,"color":"#1B4965"}},"barmode":"relative","font":{"family":"'Syne', system-ui, sans-serif","size":12,"color":"#1F2937"},"hoverlabel":{"font":{"size":12,"family":"Syne"},"bgcolor":"white"},"margin":{"l":40,"r":40,"t":70,"b":40},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","height":480,"dragmode":"zoom"},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+    <div class="grid-2" style="margin-bottom:24px;">
+      <div class="card"><div>                            <div id="3bc96816-88bf-4332-968b-22f71b07ddc2" class="plotly-graph-div" style="height:460px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("3bc96816-88bf-4332-968b-22f71b07ddc2")) {                    Plotly.newPlot(                        "3bc96816-88bf-4332-968b-22f71b07ddc2",                        [{"alignmentgroup":"True","hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e \u00b7 %{data.name}: \u003cb\u003e%{y:,}\u003c\u002fb\u003e tokens\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Input Tokens","marker":{"color":"#2E86AB","pattern":{"shape":""},"line":{"width":0}},"name":"Input Tokens","offsetgroup":"Input Tokens","orientation":"v","showlegend":true,"text":{"dtype":"f8","bdata":"AAAAAAAwlkAAAAAAAESmQAAAAAAAOKhAAAAAAAA4rUAAAAAAAHKwQAAAAAAASLJAAAAAAAAAtEA="},"textposition":"outside","x":["Step 1","Step 2","Step 3","Step 4","Step 5","Step 6","Step 7"],"xaxis":"x","y":{"dtype":"i2","bdata":"jAUiCxwMnA5yEEgSABQ="},"yaxis":"y","type":"bar","texttemplate":"%{text:,}"},{"alignmentgroup":"True","hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e \u00b7 %{data.name}: \u003cb\u003e%{y:,}\u003c\u002fb\u003e tokens\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Output Tokens","marker":{"color":"#A23B72","pattern":{"shape":""},"line":{"width":0}},"name":"Output Tokens","offsetgroup":"Output Tokens","orientation":"v","showlegend":true,"text":{"dtype":"f8","bdata":"AAAAAABgc0AAAAAAAECFQAAAAAAAQHpAAAAAAADgf0AAAAAAAHCCQAAAAAAAgHtAAAAAAADAd0A="},"textposition":"outside","x":["Step 1","Step 2","Step 3","Step 4","Step 5","Step 6","Step 7"],"xaxis":"x","y":{"dtype":"i2","bdata":"NgGoAqQB\u002fgFOArgBfAE="},"yaxis":"y","type":"bar","texttemplate":"%{text:,}"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Execution Step"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Number of Tokens"}},"legend":{"title":{"text":"Token Type"},"tracegroupgap":0,"x":0.02,"y":0.98},"title":{"text":"\u003cb\u003eClaude API Token Usage per Tool Call\u003c\u002fb\u003e","font":{"family":"'Syne', system-ui, sans-serif","size":16,"color":"#1B4965"}},"barmode":"group","font":{"family":"'Syne', system-ui, sans-serif","size":12,"color":"#1F2937"},"hoverlabel":{"font":{"size":12,"family":"Syne"},"bgcolor":"white"},"margin":{"l":40,"r":40,"t":70,"b":40},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","height":460,"dragmode":"zoom"},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+      <div class="card"><div>                            <div id="ba43a133-b019-41cb-89dc-c0ff4c543e65" class="plotly-graph-div" style="height:420px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ba43a133-b019-41cb-89dc-c0ff4c543e65")) {                    Plotly.newPlot(                        "ba43a133-b019-41cb-89dc-c0ff4c543e65",                        [{"hovertemplate":"Step %{x}\u003cbr\u003e%{fullData.name}: \u003cb\u003e%{y:,}\u003c\u002fb\u003e tokens\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Cumulative Input","line":{"color":"#2E86AB","dash":"solid","width":2.5},"marker":{"symbol":"circle","size":9},"mode":"lines+markers","name":"Cumulative Input","orientation":"v","showlegend":true,"x":{"dtype":"i1","bdata":"AQIDBAUGBw=="},"xaxis":"x","y":{"dtype":"i2","bdata":"jAWuEMocZivYOyBOIGI="},"yaxis":"y","type":"scatter"},{"hovertemplate":"Step %{x}\u003cbr\u003e%{fullData.name}: \u003cb\u003e%{y:,}\u003c\u002fb\u003e tokens\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Cumulative Output","line":{"color":"#A23B72","dash":"solid","width":2.5},"marker":{"symbol":"circle","size":9},"mode":"lines+markers","name":"Cumulative Output","orientation":"v","showlegend":true,"x":{"dtype":"i1","bdata":"AQIDBAUGBw=="},"xaxis":"x","y":{"dtype":"i2","bdata":"NgHeA4IFgAfOCYYLAg0="},"yaxis":"y","type":"scatter"},{"hovertemplate":"Step %{x}\u003cbr\u003e%{fullData.name}: \u003cb\u003e%{y:,}\u003c\u002fb\u003e tokens\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"Cumulative Total","line":{"color":"#F4A261","dash":"solid","width":2.5},"marker":{"symbol":"circle","size":9},"mode":"lines+markers","name":"Cumulative Total","orientation":"v","showlegend":true,"x":{"dtype":"i1","bdata":"AQIDBAUGBw=="},"xaxis":"x","y":{"dtype":"i2","bdata":"wgaMFEwi5jKmRaZZIm8="},"yaxis":"y","type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Step Number"},"tickmode":"linear","tick0":1,"dtick":1},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Cumulative Tokens"}},"legend":{"title":{"text":"Series"},"tracegroupgap":0,"x":0.02,"y":0.98},"title":{"text":"\u003cb\u003eCumulative Token Consumption\u003c\u002fb\u003e\u003cbr\u003e\u003csup\u003eTotal API cost growth across the agent loop\u003c\u002fsup\u003e","font":{"family":"'Syne', system-ui, sans-serif","size":16,"color":"#1B4965"}},"font":{"family":"'Syne', system-ui, sans-serif","size":12,"color":"#1F2937"},"hoverlabel":{"font":{"size":12,"family":"Syne"},"bgcolor":"white"},"margin":{"l":40,"r":40,"t":70,"b":40},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","height":420,"dragmode":"zoom"},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div>                            <div id="2ef0345d-cbf8-4a3a-940d-b492b4af48ef" class="plotly-graph-div" style="height:440px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("2ef0345d-cbf8-4a3a-940d-b492b4af48ef")) {                    Plotly.newPlot(                        "2ef0345d-cbf8-4a3a-940d-b492b4af48ef",                        [{"domain":{"x":[0.0,1.0],"y":[0.0,1.0]},"hole":0.45,"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003e%{value:.0f} ms  (%{percent})\u003cextra\u003e\u003c\u002fextra\u003e","labels":["extract_diagram_metadata","extract_component_list","extract_wire_specifications","build_bom","audit_protection_devices","generate_power_flow_graph","compile_final_report"],"legendgroup":"","name":"","showlegend":true,"values":{"dtype":"i2","bdata":"AA9CGGoTmhVwHAIXWgo="},"type":"pie","pull":[0.04,0.04,0.04,0.04,0.04,0.04,0.04],"textinfo":"percent+label","textposition":"inside"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"legend":{"tracegroupgap":0,"font":{"size":11},"x":0.8,"y":0.5},"title":{"text":"\u003cb\u003eExecution Time Distribution by Tool\u003c\u002fb\u003e","font":{"family":"'Syne', system-ui, sans-serif","size":16,"color":"#1B4965"}},"piecolorway":["rgb(8,48,107)","rgb(8,81,156)","rgb(33,113,181)","rgb(66,146,198)","rgb(107,174,214)","rgb(158,202,225)","rgb(198,219,239)","rgb(222,235,247)","rgb(247,251,255)"],"font":{"family":"'Syne', system-ui, sans-serif","size":12,"color":"#1F2937"},"hoverlabel":{"font":{"size":12,"family":"Syne"},"bgcolor":"white"},"margin":{"l":40,"r":40,"t":70,"b":40},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","height":440,"showlegend":true},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+      <div class="card"><div>                            <div id="bbeb17e6-e219-4708-8cec-04eb40db1616" class="plotly-graph-div" style="height:380px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("bbeb17e6-e219-4708-8cec-04eb40db1616")) {                    Plotly.newPlot(                        "bbeb17e6-e219-4708-8cec-04eb40db1616",                        [{"hovertemplate":"Zone \u003cb\u003e%{x}\u003c\u002fb\u003e: %{y} component(s)\u003cextra\u003e\u003c\u002fextra\u003e","legendgroup":"","marker":{"color":{"dtype":"i1","bdata":"AQIDAgID"},"coloraxis":"coloraxis","pattern":{"shape":""},"line":{"width":0}},"name":"","orientation":"v","showlegend":false,"text":{"dtype":"f8","bdata":"AAAAAAAA8D8AAAAAAAAAQAAAAAAAAAhAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAhA"},"textposition":"outside","x":["A","B","C","D","E","F"],"xaxis":"x","y":{"dtype":"i1","bdata":"AQIDAgID"},"yaxis":"y","type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"xaxis":{"anchor":"y","domain":[0.0,1.0],"title":{"text":"Zone"}},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"Number of Components"}},"coloraxis":{"colorbar":{"title":{"text":"Count"}},"colorscale":[[0.0,"rgb(247,251,255)"],[0.125,"rgb(222,235,247)"],[0.25,"rgb(198,219,239)"],[0.375,"rgb(158,202,225)"],[0.5,"rgb(107,174,214)"],[0.625,"rgb(66,146,198)"],[0.75,"rgb(33,113,181)"],[0.875,"rgb(8,81,156)"],[1.0,"rgb(8,48,107)"]],"showscale":false},"legend":{"tracegroupgap":0},"title":{"text":"\u003cb\u003eComponent Count by Power Zone\u003c\u002fb\u003e","font":{"family":"'Syne', system-ui, sans-serif","size":16,"color":"#1B4965"}},"barmode":"relative","font":{"family":"'Syne', system-ui, sans-serif","size":12,"color":"#1F2937"},"hoverlabel":{"font":{"size":12,"family":"Syne"},"bgcolor":"white"},"margin":{"l":40,"r":40,"t":70,"b":40},"paper_bgcolor":"rgba(0,0,0,0)","plot_bgcolor":"rgba(0,0,0,0)","height":380},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+    </div>
+  </div>
+
+  <!-- §5  Extracted Data Tables -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🗂️</div>
+      <div>
+        <h2>Extracted Structured Data</h2>
+        <p>Component list and Bill of Materials parsed from the wiring diagram</p>
+      </div>
+    </div>
+    <div class="card card-full" style="margin-bottom:24px;">
+      <h3 style="font-size:0.95rem;font-weight:700;color:var(--dark);margin-bottom:16px;">Component Inventory — All 13 Components by Zone</h3>
+      <div class="table-wrapper"><table class="data-table"><thead><tr><th>ID</th><th>Type</th><th>Rating</th><th>Zone</th><th>Wire Spec</th><th>Line Ref</th></tr></thead><tbody><tr><td >CB1102</td><td >Circuit Breaker</td><td >15A</td><td >A</td><td >#14 AWG Yellow</td><td >11.00–11.02</td></tr><tr><td >PMR1107</td><td >Transformer</td><td >10 kVA 460V→120V</td><td >B</td><td >#10 AWG Red/White</td><td >11.07</td></tr><tr><td >CB1108</td><td >Circuit Breaker</td><td >30A</td><td >B</td><td >#10 AWG Red</td><td >11.07–11.09</td></tr><tr><td >PS1111</td><td >Power Supply (PLC)</td><td >24VDC 1769-PA4</td><td >C</td><td >#14 AWG Red</td><td >11.10–11.11</td></tr><tr><td >PS1112</td><td >Power Supply (PLC)</td><td >24VDC 1769-PA4</td><td >C</td><td >#14 AWG Red</td><td >11.11–11.12</td></tr><tr><td >PS1113</td><td >Power Supply</td><td >240W 24VDC</td><td >C</td><td >#14 AWG Red</td><td >11.12–11.13</td></tr><tr><td >STRATIX5700</td><td >Ethernet Switch</td><td >N/A</td><td >D</td><td >#18 AWG Blue</td><td >11.14</td></tr><tr><td >PANELVIEW+1000</td><td >HMI</td><td >24VDC</td><td >D</td><td >#18 AWG Blue</td><td >11.15–11.16</td></tr><tr><td >PS1117</td><td >Power Supply</td><td >480W 24VDC</td><td >E</td><td >#18 AWG Blue</td><td >11.17</td></tr><tr><td >CB1117</td><td >Circuit Breaker</td><td >15A</td><td >E</td><td >#14 AWG Red</td><td >11.17</td></tr><tr><td >CB1121</td><td >Circuit Breaker</td><td >5A</td><td >F</td><td >N/A</td><td >11.21</td></tr><tr><td >CB1123</td><td >Circuit Breaker</td><td >5A</td><td >F</td><td >N/A</td><td >11.23</td></tr><tr><td >CB1146</td><td >Circuit Breaker</td><td >1A</td><td >F</td><td >N/A</td><td >11.46</td></tr></tbody></table></div>
+    </div>
+    <div class="card card-full">
+      <h3 style="font-size:0.95rem;font-weight:700;color:var(--dark);margin-bottom:16px;">Bill of Materials (BOM) — 11 Line Items</h3>
+      <div class="table-wrapper"><table class="data-table"><thead><tr><th>Item</th><th>Part Number</th><th>Description</th><th>Qty</th><th>Reference</th></tr></thead><tbody><tr><td >1</td><td >1769-PA4</td><td >PLC Power Supply, 24VDC</td><td >2</td><td >PS1111, PS1112</td></tr><tr><td >2</td><td >1769-L30ER</td><td >CompactLogix PLC</td><td >1</td><td >PLC Rack</td></tr><tr><td >3</td><td >1783-US06T</td><td >Stratix 5700 Ethernet Switch</td><td >1</td><td >STRATIX5700</td></tr><tr><td >4</td><td >2711P-T10C22D9P</td><td >PanelView+ 1000 HMI</td><td >1</td><td >PANELVIEW+1000</td></tr><tr><td >5</td><td >1492-PSPA240W</td><td >Power Supply 240W 24VDC</td><td >1</td><td >PS1113</td></tr><tr><td >6</td><td >1492-PSPA480W</td><td >Power Supply 480W 24VDC</td><td >1</td><td >PS1117</td></tr><tr><td >7</td><td >140M-C2E-C16</td><td >Circuit Breaker 15A</td><td >2</td><td >CB1102, CB1117</td></tr><tr><td >8</td><td >140M-C2E-C30</td><td >Circuit Breaker 30A</td><td >1</td><td >CB1108</td></tr><tr><td >9</td><td >140M-C2E-C5</td><td >Circuit Breaker 5A</td><td >2</td><td >CB1121, CB1123</td></tr><tr><td >10</td><td >140M-C2E-C1</td><td >Circuit Breaker 1A</td><td >1</td><td >CB1146</td></tr><tr><td >11</td><td >PMR1107-CUSTOM</td><td >Transformer 10kVA 480V/120V</td><td >1</td><td >PMR1107</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- §6  Circuit Breaker Audit -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🔒</div>
+      <div>
+        <h2>Protection Device Audit</h2>
+        <p>IEC 60364 compliance check on all circuit breakers — hover rows for details</p>
+      </div>
+    </div>
+    <div class="card card-full"><div>                            <div id="b4ba51c4-9021-431c-8413-4774eefed6a0" class="plotly-graph-div" style="height:310px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("b4ba51c4-9021-431c-8413-4774eefed6a0")) {                    Plotly.newPlot(                        "b4ba51c4-9021-431c-8413-4774eefed6a0",                        [{"cells":{"align":["center","center","left","center"],"fill":{"color":[["#D1FAE5","#D1FAE5","#D1FAE5","#D1FAE5","#D1FAE5","#D1FAE5"]]},"font":{"size":12},"height":32,"values":[["CB1102","CB1108","CB1117","CB1121","CB1123","CB1146"],["15A","30A","15A","5A","5A","1A"],["Zone A general loads","Transformer PMR1107 primary","Zone E power supply PS1117","Zone F branch circuit A","Zone F branch circuit B","Zone F sensitive\u002fsignal circuit"],["\u2705 PASS","\u2705 PASS","\u2705 PASS","\u2705 PASS","\u2705 PASS","\u2705 PASS"]]},"columnwidth":[100,80,240,80],"header":{"align":"center","fill":{"color":"#1B4965"},"font":{"color":"white","size":12},"height":38,"values":["\u003cb\u003eBreaker ID\u003c\u002fb\u003e","\u003cb\u003eRating\u003c\u002fb\u003e","\u003cb\u003eProtects\u003c\u002fb\u003e","\u003cb\u003eAudit\u003c\u002fb\u003e"]},"type":"table"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"margin":{"l":20,"r":20,"t":55,"b":15},"title":{"text":"\u003cb\u003eCircuit Breaker Audit \u2014 IEC 60364 Compliance\u003c\u002fb\u003e"},"height":310,"paper_bgcolor":"rgba(0,0,0,0)"},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+  </div>
+
+  <!-- §7  Power Flow Sankey -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <div>
+        <h2>Power Distribution Flow</h2>
+        <p>Sankey diagram — drag nodes to rearrange, hover links for flow values</p>
+      </div>
+    </div>
+    <div class="card card-full"><div>                            <div id="ab2e17a0-a9f4-4c25-892f-f97fd9aee314" class="plotly-graph-div" style="height:540px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("ab2e17a0-a9f4-4c25-892f-f97fd9aee314")) {                    Plotly.newPlot(                        "ab2e17a0-a9f4-4c25-892f-f97fd9aee314",                        [{"arrangement":"snap","link":{"color":"rgba(46,134,171,0.35)","hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cbr\u003e%{source.label} \u2192 %{target.label}\u003cbr\u003eRelative flow: %{value}\u003cextra\u003e\u003c\u002fextra\u003e","label":["480V AC feed","Protected supply to TX","Step-down 480\u2192120V","120V AC to rectifiers","Rectified 24VDC","PLC power","HMI power","240W supply","480W supply"],"source":[0,1,2,3,4,5,5,3,3],"target":[1,2,3,4,5,6,7,8,9],"value":[100,95,90,85,80,45,20,10,15]},"node":{"color":["#E63946","#F4A261","#E9C46A","#2A9D8F","#52B788","#1B4965","#023E8A","#0077B6","#1B4965","#1B4965"],"hovertemplate":"\u003cb\u003e%{label}\u003c\u002fb\u003e\u003cextra\u003e\u003c\u002fextra\u003e","label":["480V AC Source","CB1108 (30A)","PMR1107 Transformer\n10 kVA","120V AC Bus","PS1111 \u002f PS1112\nRectifiers","24V DC Bus","PLC Rack\n(CompactLogix)","HMI\n(PanelView+ 1000)","PS1113 (240W)","PS1117 (480W)"],"line":{"color":"white","width":1},"pad":25,"thickness":28},"type":"sankey"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"font":{"size":11,"family":"Syne, sans-serif"},"hoverlabel":{"font":{"size":12},"bgcolor":"white"},"margin":{"l":30,"r":30,"t":65,"b":20},"title":{"text":"\u003cb\u003ePower Distribution Flow\u003c\u002fb\u003e\u003cbr\u003e\u003csup\u003e480V AC \u2192 120V AC \u2192 24V DC \u2014 drag nodes to rearrange\u003c\u002fsup\u003e"},"height":540,"paper_bgcolor":"rgba(0,0,0,0)"},                        {"responsive": true, "displayModeBar": true, "modeBarButtonsToAdd": ["v1hovermode", "toggleSpikelines"], "toImageButtonOptions": {"format": "png", "scale": 2}}                    )                };            </script>        </div></div>
+  </div>
+
+  <!-- §8  Full Execution Log -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">📋</div>
+      <div>
+        <h2>Full Execution Log</h2>
+        <p>Complete record of every API call in the agent loop</p>
+      </div>
+    </div>
+    <div class="card card-full">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Step</th><th>Tool</th><th>Purpose</th>
+              <th>Duration</th><th>Input Tok.</th><th>Output Tok.</th><th>Stop</th>
+            </tr>
+          </thead>
+          <tbody>
+    <tr>
+      <td><strong>Step 1</strong></td>
+      <td><code>extract_diagram_metadata</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Parse diagram header, drawing number, revision, voltage levels, and applicable standards from the title block and annotations</td>
+      <td>3840 ms</td>
+      <td>1,420</td>
+      <td>310</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 2</strong></td>
+      <td><code>extract_component_list</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Identify every tagged component (circuit breakers, power supplies, transformer, HMI, Ethernet switch) with reference designator, type, rating, and zone</td>
+      <td>6210 ms</td>
+      <td>2,850</td>
+      <td>680</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 3</strong></td>
+      <td><code>extract_wire_specifications</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Read wire gauge, colour code, and AWG rating for every inter-component connection shown in the diagram</td>
+      <td>4970 ms</td>
+      <td>3,100</td>
+      <td>420</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 4</strong></td>
+      <td><code>build_bom</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Consolidate extracted components into a formal Bill of Materials with manufacturer part numbers, quantities, and cross-references</td>
+      <td>5530 ms</td>
+      <td>3,740</td>
+      <td>510</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 5</strong></td>
+      <td><code>audit_protection_devices</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Verify each circuit breaker rating against the load it protects and cross-check against IEC 60364 overcurrent protection requirements</td>
+      <td>7280 ms</td>
+      <td>4,210</td>
+      <td>590</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 6</strong></td>
+      <td><code>generate_power_flow_graph</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Construct the directed power-flow graph from 480V AC source through transformer and rectifiers to the 24V DC bus and all terminal loads</td>
+      <td>5890 ms</td>
+      <td>4,680</td>
+      <td>440</td>
+      <td><span class="badge badge-primary">tool_use</span></td>
+    </tr>
+    <tr>
+      <td><strong>Step 7</strong></td>
+      <td><code>compile_final_report</code></td>
+      <td class="text-muted" style="font-size:0.82rem;">Aggregate all prior tool outputs into a single structured report payload and signal end_turn to terminate the agent loop</td>
+      <td>2650 ms</td>
+      <td>5,120</td>
+      <td>380</td>
+      <td><span class="badge badge-success">end_turn</span></td>
+    </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Dynamic Interactive Report · Generated 2026-04-10 19:16:37 ·
+  Agentic Multimodal Extraction Pipeline ·
+  28,450 tokens · 36.4s total ·
+  Built with Python + Plotly
+</footer>
+
+</body>
+</html>
